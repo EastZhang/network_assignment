@@ -1,0 +1,1 @@
+/usr/bin/cc   -rdynamic CMakeFiles/opt_receiver.dir/src/rtp_opt.c.o CMakeFiles/opt_receiver.dir/src/util.c.o CMakeFiles/opt_receiver.dir/src/opt_receiver.c.o  -o opt_receiver  -L/usr/local/lib 

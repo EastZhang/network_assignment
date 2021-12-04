@@ -1,0 +1,8 @@
+{
+    "cmake.configureOnOpen": false,
+    "files.associations": {
+        "fcntl.h": "c",
+        "util.h": "c",
+        "rtp_opt.h": "c"
+    }
+}

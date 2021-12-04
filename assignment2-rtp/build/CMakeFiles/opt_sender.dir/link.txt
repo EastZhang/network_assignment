@@ -1,0 +1,1 @@
+/usr/bin/cc   -rdynamic CMakeFiles/opt_sender.dir/src/rtp_opt.c.o CMakeFiles/opt_sender.dir/src/util.c.o CMakeFiles/opt_sender.dir/src/opt_sender.c.o  -o opt_sender  -L/usr/local/lib 
