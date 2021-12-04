@@ -13,7 +13,7 @@
 
 #include "common.h"
 
-int respond(int type, int fromid, void * msg){
+int respond(int sockfd, int type, int fromid, void * msg, struct sockaddr * from){
     switch(type){
         case(AGENT_DV):{
             return propagate();
@@ -21,7 +21,14 @@ int respond(int type, int fromid, void * msg){
         case(ROUTER_DV):{
             int from_dv[MAX_ROUTERN][MAX_ROUTERN];
             memcpy(from_dv, msg, sizeof(from_dv));
-            
+            break;
+        }
+        case(AGENT_SHOW):{
+            printf("received cmd SHOW\n");
+            char buffer[BUFFER_SIZE];
+            int ret = show_dv(buffer);
+            int size = sendto(sockfd, buffer, ret, 0, from, sizeof(sockaddr));
+            return size;
         }
     }
 }
@@ -39,7 +46,7 @@ int router(){
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(atoi(get_host_port()));
-    // bind rtp socket to address
+    // bind rp socket to address
     if (rp_bind(sockfd, (struct sockaddr *)&address, sizeof(struct sockaddr))<0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
@@ -48,12 +55,13 @@ int router(){
 
     int fromid, type;
     char msg[BUFFER_SIZE];
-    while(rp_recvfrom(sockfd, &fromid, &type, msg) > 0){
+    struct sockaddr from;
+    while(rp_recvfrom(sockfd, &fromid, &type, msg, &from) > 0){
         // printf("here\n");
-        if(respond(type, fromid, msg) < 0){
+        if(respond(sockfd, type, fromid, msg, &from) < 0){
             perror("fail to respond command");
             exit(-1);
-        };
+        }
         // return 0;
     }
     return 0;

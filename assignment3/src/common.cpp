@@ -26,6 +26,29 @@ int set_weight(router_t * host, int rid1, int rid2, int weight){
     return 0;
 }
 
+int show_dv(char *buffer){
+    int hid = host->id, cnt = 0;
+    char buf[BUFFER_SIZE];
+    for(int i = 0; i < router_num; ++i){
+        if(i == hid){
+            continue;
+        }
+        if(host->dv[hid][i] >= MAX_DIST){
+            continue;
+        }
+        char tmp[50];
+        sprintf(tmp, "Dest: %d, next: %d, cost: %d\n", ID2RID(i), ID2RID(host->next_hop[i]), host->dv[hid][i]);
+        int len = strlen(tmp);
+        memcpy(buf + cnt, tmp, len);
+        cnt += len;
+    }
+    buf[cnt] = '\0';
+    cnt++;
+    printf("%s", buf);
+    memcpy(buffer, buf, cnt);
+    return cnt;
+}
+
 
 int parse_loc_file(char * filename, int host_rid, int agent){
     FILE * fp;
@@ -124,12 +147,14 @@ int parse_top_file(char * filename, int rid){
 
         if(atoi(rid1) == rid){
             set_weight(host, rid, atoi(rid2), atoi(weight));
+            host->next_hop[id2] = id2;
             int w = atoi(weight);
             if(w > 0 && w < MAX_DIST)
                 host->neighbor.push_back(RID2ID(atoi(rid2)));
         }
         if(atoi(rid2) == rid){
             set_weight(host, rid, atoi(rid1), atoi(weight));
+            // host->next_hop[id1] = id1;
             // host->neighbor.push_back(atoi(rid1));
         }
         
@@ -196,10 +221,11 @@ int rp_sendto(int sockfd, int from_id, int to_id, const void * msg, int len, int
     return sendto(sockfd, (void *)buffer, len + sizeof(rp_header_t), 0, (struct sockaddr *)&receiver_addr, sizeof(sockaddr_in));
 }
 
-int rp_recvfrom(int sockfd, int * from_id, int * type, void * buf){
+int rp_recvfrom(int sockfd, int * from_id, int * type, void * buf, struct sockaddr *from){
     char buffer[BUFFER_SIZE];
     int bytes;
-    if((bytes = recvfrom(sockfd, (void *)buffer, BUFFER_SIZE, 0, NULL, 0)) < 0){
+    socklen_t socklen;
+    if((bytes = recvfrom(sockfd, (void *)buffer, BUFFER_SIZE, 0, from, &socklen)) < 0){
         printf("recvfrom error\n");
         return -1;
     }

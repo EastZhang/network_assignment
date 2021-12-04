@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/home/east/Desktop/assignment3/src/agent.cpp
+/home/east/Desktop/network_assignment/assignment3/src/agent.cpp
 stdio.h
 -
 stdlib.h
@@ -34,9 +34,9 @@ map
 vector
 -
 common.h
-/home/east/Desktop/assignment3/src/common.h
+/home/east/Desktop/network_assignment/assignment3/src/common.h
 
-/home/east/Desktop/assignment3/src/common.cpp
+/home/east/Desktop/network_assignment/assignment3/src/common.cpp
 stdio.h
 -
 stdlib.h
@@ -64,9 +64,9 @@ map
 vector
 -
 common.h
-/home/east/Desktop/assignment3/src/common.h
+/home/east/Desktop/network_assignment/assignment3/src/common.h
 
-/home/east/Desktop/assignment3/src/common.h
+/home/east/Desktop/network_assignment/assignment3/src/common.h
 stdint.h
 -
 sys/types.h

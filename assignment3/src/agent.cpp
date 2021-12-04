@@ -50,7 +50,7 @@ int parse_cmd(char *cmd, int *argv){
                 int len = strlen(tmpstr);
                 tmpstr[len - 1] = '\0';
             }
-            argv[i] = atoi(tmpstr);
+            argv[i] = RID2ID(atoi(tmpstr));
             // printf("%d ", argv[i]);
         }
         // printf("\n");
@@ -69,7 +69,7 @@ int parse_cmd(char *cmd, int *argv){
         strcpy(tmp, cmd + 5);
         int len = strlen(tmp);
         tmp[len - 1] = '\0';
-        argv[0] = atoi(tmp);
+        argv[0] = RID2ID(atoi(tmp));
         printf("%d\n", argv[0]);
         // printf("\n");
         return SHOW;
@@ -84,7 +84,7 @@ int parse_cmd(char *cmd, int *argv){
         strcpy(tmp, cmd + 6);
         int len = strlen(tmp);
         tmp[len - 1] = '\0';
-        argv[0] = atoi(tmp);
+        argv[0] = RID2ID(atoi(tmp));
         printf("%d\n", argv[0]);
         // printf("\n");
         return RESET;
@@ -113,17 +113,27 @@ int agent(){
         // int ret = rp_sendto(sockfd, -1, id, "hello", 10, AGENT_SHOW);
         // printf("sent %d bytes to router %d\n", ret, id);
         int argv[4];
+        char msg[BUFFER_SIZE];
         switch(parse_cmd(cmd, argv)){
             case(DV):{
+                for(int i = 0; i < router_num; ++i){
+                    rp_sendto(sockfd, -1, i, msg, 0, AGENT_DV);
+                }
                 break;
             }
             case(UPDATE):{
                 break;
             }
             case(SHOW):{
+                rp_sendto(sockfd, -1, argv[0], msg, 0, AGENT_SHOW);
+                char buffer[BUFFER_SIZE];
+                int fromid, type;
+                recvfrom(sockfd, buffer, BUFFER_SIZE, 0, NULL, 0);
+                printf("%s", buffer);
                 break;
             }
             case(RESET):{
+                rp_sendto(sockfd, -1, argv[0], msg, 0, AGENT_RESET);
                 break;
             }
             default:{

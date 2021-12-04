@@ -12,6 +12,7 @@
 #define AGENT_UPDATE  2
 #define AGENT_SHOW    3
 #define AGENT_RESET   4
+#define ROUTER_SHOW   5
 
 #define RID2ID(rid)  (rid2id[rid])
 #define ID2RID(id)   (id2rid[id])
@@ -58,13 +59,15 @@ int rp_bind(int sockfd, struct sockaddr *addr, socklen_t addrlen);
 
 int rp_sendto(int sockfd, int from_id, int to_id, const void * msg, int len, int type);
 
-int rp_recvfrom(int sockfd, int * from_id, int * type, void * buf);
+int rp_recvfrom(int sockfd, int * from_id, int * type, void * buf, struct sockaddr * from);
 
 char * get_host_ip();
 
 char * get_host_port();
 
 int propagate();
+
+int show_dv(char* buffer);
 
 void set_socket(int sockfd);
 // int print_router_info(router_t r);
