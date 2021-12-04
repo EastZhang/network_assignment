@@ -87,7 +87,7 @@ int parse_cmd(char *cmd, int *argv){
         argv[0] = atoi(tmp);
         printf("%d\n", argv[0]);
         // printf("\n");
-        return SHOW;
+        return RESET;
     }
     return -1;
 }
