@@ -1,0 +1,1 @@
+/usr/bin/c++    -rdynamic CMakeFiles/router.dir/src/common.cpp.o CMakeFiles/router.dir/src/router.cpp.o  -o router  -L/usr/local/lib 

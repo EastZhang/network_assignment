@@ -1,0 +1,16 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/east/Desktop/assignment3/src/common.h
+
+/home/east/Desktop/assignment3/src/router.c
+stdio.h
+-
+common.h
+/home/east/Desktop/assignment3/src/common.h
+
