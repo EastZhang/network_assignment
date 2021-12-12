@@ -16,12 +16,25 @@
 int respond(int sockfd, int type, int fromid, void * msg, struct sockaddr * from){
     switch(type){
         case(AGENT_DV):{
+            printf("received cmd DV\n");
             return propagate();
         }
         case(ROUTER_DV):{
-            int from_dv[MAX_ROUTERN][MAX_ROUTERN];
-            memcpy(from_dv, msg, sizeof(from_dv));
-            break;
+            printf("received DV from router id%d:\n", fromid);
+            int from_dv[MAX_ROUTERN];
+            uint32_t * m = (uint32_t *)msg;
+            int n = get_routernum();
+            for(int i = 0; i < n; ++i){
+                from_dv[i] = (int)ntohl(m[i]);
+                printf("%d ", from_dv[i]);
+            }
+            printf("\n");
+
+            update_dv(fromid, from_dv);
+            if(bellman_ford() > 0){
+                return propagate();
+            }
+            return 0;
         }
         case(AGENT_SHOW):{
             printf("received cmd SHOW\n");
@@ -29,6 +42,12 @@ int respond(int sockfd, int type, int fromid, void * msg, struct sockaddr * from
             int ret = show_dv(buffer);
             int size = sendto(sockfd, buffer, ret, 0, from, sizeof(sockaddr));
             return size;
+        }
+        case(AGENT_UPDATE):{
+            printf("received cmd UPDATE\n");
+            uint32_t *argv = (uint32_t *)msg;
+            int toid = (int)ntohl(argv[1]), weight = (int)ntohl(argv[2]);
+            return update_to(toid, weight);
         }
     }
 }

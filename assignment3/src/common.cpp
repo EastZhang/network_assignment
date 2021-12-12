@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <map>
 #include <vector>
+#include <algorithm>
 
 #include "common.h"
 
@@ -26,18 +27,38 @@ int set_weight(router_t * host, int rid1, int rid2, int weight){
     return 0;
 }
 
+int update_to(int toid, int weight){
+    host->dv[host->id][toid] = weight;
+}
+
 int show_dv(char *buffer){
     int hid = host->id, cnt = 0;
     char buf[BUFFER_SIZE];
+    int rids[router_num];
     for(int i = 0; i < router_num; ++i){
-        if(i == hid){
+        rids[i] = id2rid[i];
+    }
+    sort(rids, rids + router_num);
+    for(int i = 0; i < router_num; ++i){
+        int tmp = rids[i];
+        rids[i] = rid2id[tmp];
+    }
+    for(int i = 0; i < router_num; ++i){
+        int ii = rids[i];
+        if(ii == hid){
+            int rid = id2rid[ii];
+            char tmp[50];
+            sprintf(tmp, "Dest: %d, next: %d, cost: %d\n", rid, rid, 0);
+            int len = strlen(tmp);
+            memcpy(buf + cnt, tmp, len);
+            cnt += len;
             continue;
         }
-        if(host->dv[hid][i] >= MAX_DIST){
+        if(host->dv[hid][ii] >= MAX_DIST){
             continue;
         }
         char tmp[50];
-        sprintf(tmp, "Dest: %d, next: %d, cost: %d\n", ID2RID(i), ID2RID(host->next_hop[i]), host->dv[hid][i]);
+        sprintf(tmp, "Dest: %d, next: %d, cost: %d\n", id2rid[ii], id2rid[host->next_hop[ii]], host->dv[hid][ii]);
         int len = strlen(tmp);
         memcpy(buf + cnt, tmp, len);
         cnt += len;
@@ -79,6 +100,8 @@ int parse_loc_file(char * filename, int host_rid, int agent){
         int RID = atoi(rid);
         rid2id[RID] = i;
         id2rid[i] = RID;
+        // printf("RID:%d, ID:%d\n", RID, i);
+        // printf("rid2id[RID] = %d, id2rid[ID] = %d\n", RID2ID(RID), ID2RID(i));
 
 
         router_ip[i] = (char *)calloc(100, 1);
@@ -96,7 +119,13 @@ int parse_loc_file(char * filename, int host_rid, int agent){
         strcpy(host->port, port);
         host->rid = RID;
         host->id = i;
-        memset(host->dv, -1, sizeof(host->dv));
+        memset(host->dv, -1, sizeof(host->dv)); 
+        // for(int i = 0; i < router_num; ++i){
+        //     for(int j = 0; j < router_num; ++j){
+        //         host->dv[i][j] = MAX_DIST;
+        //     }
+        // }
+
         printf("rid:%d, id:%d, ip:%s, port:%s,\n", atoi(rid), i, host->ip, host->port);
         // routers[i].addr = addr;
         // routers[i].rid = RID;
@@ -201,6 +230,7 @@ int rp_bind(int sockfd, struct sockaddr *addr, socklen_t addrlen) {
 
 
 int rp_sendto(int sockfd, int from_id, int to_id, const void * msg, int len, int type){
+    // printf("sendto!\n");
     char buffer[BUFFER_SIZE];
     struct sockaddr_in receiver_addr;
     memset(&receiver_addr, 0, sizeof(receiver_addr));
@@ -252,24 +282,58 @@ void set_socket(int sockfd){
     host->sockfd = sockfd;
 }
 
+int get_routernum(){
+    return router_num;
+}
+
+int RID2ID(int rid){
+    return rid2id[rid];
+}
+
+int ID2RID(int id){
+    return id2rid[id];
+}
+
 int propagate(){
     int id = host->id;
-    char msg[BUFFER_SIZE];
-    int len = sizeof(host->dv);
-    memcpy(msg, host->dv, len);
-    for(auto it = host->neighbor.begin(); it != host->neighbor.end(); ++it){
-        int nid = *it;
-        if(rp_sendto(host->sockfd, id, nid, msg, len, ROUTER_DV) < 0){
+    uint32_t dv[router_num];
+    for(int i = 0; i < router_num; ++i){
+        dv[i] = htonl((uint32_t)host->dv[id][i]);
+    }
+    for(int i = 0; i < router_num; ++i){
+        if(i == id || host->dv[id][i] >= MAX_DIST){
+            continue;
+        }
+        if(rp_sendto(host->sockfd, id, i, dv, router_num * sizeof(uint32_t), ROUTER_DV) < 0){
+            printf("sendto error\n");
             return -1;
         }
+    }
+}
+
+int update_dv(int fromid, int fromdv[]){
+    int id = host->id;
+    for(int i = 0; i < router_num; ++i){
+        host->dv[fromid][i] = fromdv[i];
     }
     return 0;
 }
 
-int update_dv(int fromid, int **fromdv){
-    memcpy(host->dv[fromid], fromdv[fromid], MAX_ROUTERN * sizeof(int));
-}
-
 int bellman_ford(){
-    
+    int id = host->id, change = 0;
+    for(int to = 0; to < router_num; ++to){
+        if(id == to){
+            continue;
+        }
+        for(int next = 0; next < router_num; ++next){
+            if(host->dv[id][to] > host->dv[id][next] + host->dv[next][to]){
+                host->dv[id][to] = host->dv[id][next] + host->dv[next][to];
+                if(next != host->next_hop[to]){
+                    change = 1;
+                    host->next_hop[to] = next;
+                }
+            }
+        }
+    }
+    return change;
 }

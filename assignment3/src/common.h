@@ -14,12 +14,12 @@
 #define AGENT_RESET   4
 #define ROUTER_SHOW   5
 
-#define RID2ID(rid)  (rid2id[rid])
-#define ID2RID(id)   (id2rid[id])
+// #define RID2ID(rid)  (rid2id[rid])
+// #define ID2RID(id)   (id2rid[id])
 
 #define BUFFER_SIZE 2048
 #define MAX_ROUTERN 10
-#define MAX_DIST    1000  // 1000+ means not able to reach
+#define MAX_DIST    1001  // 1000+ means not able to reach
 
 typedef struct __attribute__ ((__packed__)) RP_header {
     uint8_t type;       // 0: ROUTER_DV; 1: AGENT_DV; 2: AGENT_UPDATE; 3: AGENT_SHOW; 4: AGENT_RESET
@@ -70,6 +70,18 @@ int propagate();
 int show_dv(char* buffer);
 
 void set_socket(int sockfd);
+
+int ID2RID(int id);
+
+int RID2ID(int rid);
+
+int update_dv(int fromid, int fromdv[]);
+
+int bellman_ford();
+
+int get_routernum();
+
+int update_to(int toid, int weight);
 // int print_router_info(router_t r);
 
 #endif

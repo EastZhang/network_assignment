@@ -49,8 +49,11 @@ int parse_cmd(char *cmd, int *argv){
             if(i == 2){
                 int len = strlen(tmpstr);
                 tmpstr[len - 1] = '\0';
+                argv[i] = atoi(tmpstr);
             }
-            argv[i] = RID2ID(atoi(tmpstr));
+            else{
+                argv[i] = RID2ID(atoi(tmpstr));
+            }
             // printf("%d ", argv[i]);
         }
         // printf("\n");
@@ -69,8 +72,15 @@ int parse_cmd(char *cmd, int *argv){
         strcpy(tmp, cmd + 5);
         int len = strlen(tmp);
         tmp[len - 1] = '\0';
+
+        // for(int i = 0; i < 4; ++i){
+        //     printf("id: %d, rid: %d\n", i, ID2RID(i));
+        // }
+
         argv[0] = RID2ID(atoi(tmp));
-        printf("%d\n", argv[0]);
+        // printf("%d\n", argv[0]);
+        // printf("%s\n", tmp);
+
         // printf("\n");
         return SHOW;
     }
@@ -116,18 +126,26 @@ int agent(){
         char msg[BUFFER_SIZE];
         switch(parse_cmd(cmd, argv)){
             case(DV):{
-                for(int i = 0; i < router_num; ++i){
-                    rp_sendto(sockfd, -1, i, msg, 0, AGENT_DV);
+                // rp_sendto(sockfd, -1, 0, msg, 0, AGENT_DV);
+                int k, n = get_routernum();
+                for(k = 0; k < n; ++k){
+                    rp_sendto(sockfd, -1, k, msg, 0, AGENT_DV);
                 }
+                printf("cmd dv ends\n");
                 break;
             }
             case(UPDATE):{
+                uint32_t m[3];
+                for(int i = 0; i < 3; ++i){
+                    m[i] = htonl((uint32_t) argv[i]);
+                }
+                rp_sendto(sockfd, -1, argv[0], (void *)m, 3 * sizeof(uint32_t), AGENT_UPDATE);
                 break;
             }
             case(SHOW):{
                 rp_sendto(sockfd, -1, argv[0], msg, 0, AGENT_SHOW);
                 char buffer[BUFFER_SIZE];
-                int fromid, type;
+                // int fromid, type;
                 recvfrom(sockfd, buffer, BUFFER_SIZE, 0, NULL, 0);
                 printf("%s", buffer);
                 break;
@@ -147,6 +165,7 @@ int agent(){
 }
 
 int main(int argc, char **argv){
+    setvbuf(stdout, NULL, _IONBF, 0);
     if(argc < 2){
         printf("error: too less args\n");
         exit(-1);
@@ -160,5 +179,8 @@ int main(int argc, char **argv){
         printf("error: agent init failed\n");
         exit(-1);
     }
+            for(int i = 0; i < 4; ++i){
+            printf("id: %d, rid: %d\n", i, ID2RID(i));
+        }
     return agent();
 }
