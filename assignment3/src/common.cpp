@@ -28,7 +28,13 @@ int set_weight(router_t * host, int rid1, int rid2, int weight){
 }
 
 int update_to(int toid, int weight){
-    host->dv[host->id][toid] = weight;
+    if(weight <= 0){
+        weight = MAX_DIST;
+    }
+    host->dist[toid] = weight;
+    host->next_hop[toid] = toid;
+    bellman_ford();
+    return 0;
 }
 
 int show_dv(char *buffer){
@@ -48,7 +54,7 @@ int show_dv(char *buffer){
         if(ii == hid){
             int rid = id2rid[ii];
             char tmp[50];
-            sprintf(tmp, "Dest: %d, next: %d, cost: %d\n", rid, rid, 0);
+            sprintf(tmp, "dest: %d, next: %d, cost: %d\n", rid, rid, 0);
             int len = strlen(tmp);
             memcpy(buf + cnt, tmp, len);
             cnt += len;
@@ -58,7 +64,7 @@ int show_dv(char *buffer){
             continue;
         }
         char tmp[50];
-        sprintf(tmp, "Dest: %d, next: %d, cost: %d\n", id2rid[ii], id2rid[host->next_hop[ii]], host->dv[hid][ii]);
+        sprintf(tmp, "dest: %d, next: %d, cost: %d\n", id2rid[ii], id2rid[host->next_hop[ii]], host->dv[hid][ii]);
         int len = strlen(tmp);
         memcpy(buf + cnt, tmp, len);
         cnt += len;
@@ -154,7 +160,14 @@ int parse_top_file(char * filename, int rid){
 
     for(int i = 0; i < MAX_ROUTERN; ++i){
         for(int j = 0; j < MAX_ROUTERN; ++j){
-            set_weight(host, i, j, -1);
+            set_weight(host, i, j, MAX_DIST);
+            if(i == j){
+                host->dv[i][j] = 0;
+            }
+        }
+        host->dist[i] = MAX_DIST;
+        if(i == host->id){
+            host->dist[i] = 0;
         }
     }
 
@@ -175,13 +188,23 @@ int parse_top_file(char * filename, int rid){
         int id1 = RID2ID(atoi(rid1)), id2 = RID2ID(atoi(rid2));
 
         if(atoi(rid1) == rid){
-            set_weight(host, rid, atoi(rid2), atoi(weight));
+            // set_weight(host, rid, atoi(rid2), atoi(weight));
+            int ww = atoi(weight);
+            if(ww <= 0){
+                ww = MAX_DIST;
+            }
+            host->dist[id2] = ww;
             host->next_hop[id2] = id2;
             int w = atoi(weight);
             if(w > 0 && w < MAX_DIST)
                 host->neighbor.push_back(RID2ID(atoi(rid2)));
         }
         if(atoi(rid2) == rid){
+            host->dist[id1] = atoi(weight);
+            if(host->dist[id1] <= 0){
+                host->dist[id1] = MAX_DIST;
+            }
+            host->next_hop[id1] = id1;
             set_weight(host, rid, atoi(rid1), atoi(weight));
             // host->next_hop[id1] = id1;
             // host->neighbor.push_back(atoi(rid1));
@@ -207,6 +230,7 @@ int router_init(char * loc_file_name, char * top_file_name, int rid){
         perror("parse_top_file error");
         return -1;
     }
+    host->pacnum = 0;
     return 0;
 }
 
@@ -259,7 +283,7 @@ int rp_recvfrom(int sockfd, int * from_id, int * type, void * buf, struct sockad
         printf("recvfrom error\n");
         return -1;
     }
-    printf("received %d bytes\n", bytes);
+    // printf("received %d bytes\n", bytes);
     buffer[bytes] = '\0';
     rp_header_t * header = (rp_header_t *)buffer;
     *from_id = (int)header->fromid;
@@ -301,7 +325,7 @@ int propagate(){
         dv[i] = htonl((uint32_t)host->dv[id][i]);
     }
     for(int i = 0; i < router_num; ++i){
-        if(i == id || host->dv[id][i] >= MAX_DIST){
+        if(i == id || host->dist[i] >= MAX_DIST || host->dist[i] <= 0){
             continue;
         }
         if(rp_sendto(host->sockfd, id, i, dv, router_num * sizeof(uint32_t), ROUTER_DV) < 0){
@@ -309,13 +333,30 @@ int propagate(){
             return -1;
         }
     }
+    return 0;
 }
 
 int update_dv(int fromid, int fromdv[]){
-    int id = host->id;
-    for(int i = 0; i < router_num; ++i){
-        host->dv[fromid][i] = fromdv[i];
+    if(host->pacnum >= 1000){
+        host->pacnum = 0;
+        return 0;
     }
+    host->pacnum++;
+    int id = host->id;
+    int change = 0;
+    for(int i = 0; i < router_num; ++i){
+        if(host->dv[fromid][i] == fromdv[i]){
+            continue;
+        }
+        host->dv[fromid][i] = fromdv[i];
+        host->dv[i][fromid] = fromdv[i];
+        change = 1;
+    }
+    if(change){
+        bellman_ford();
+        propagate();
+    }
+    // host->dv[id][fromid] = host->dv[fromid][id];
     return 0;
 }
 
@@ -325,9 +366,11 @@ int bellman_ford(){
         if(id == to){
             continue;
         }
+        host->dv[id][to] = host->dist[to];
+        host->next_hop[to] = to;
         for(int next = 0; next < router_num; ++next){
-            if(host->dv[id][to] > host->dv[id][next] + host->dv[next][to]){
-                host->dv[id][to] = host->dv[id][next] + host->dv[next][to];
+            if(host->dv[id][to] > host->dist[next] + host->dv[next][to]){
+                host->dv[id][to] = host->dist[next] + host->dv[next][to];
                 if(next != host->next_hop[to]){
                     change = 1;
                     host->next_hop[to] = next;

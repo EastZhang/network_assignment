@@ -20,7 +20,7 @@ int respond(int sockfd, int type, int fromid, void * msg, struct sockaddr * from
             return propagate();
         }
         case(ROUTER_DV):{
-            printf("received DV from router id%d:\n", fromid);
+            printf("received DV from router id %d: ", fromid);
             int from_dv[MAX_ROUTERN];
             uint32_t * m = (uint32_t *)msg;
             int n = get_routernum();
@@ -30,11 +30,11 @@ int respond(int sockfd, int type, int fromid, void * msg, struct sockaddr * from
             }
             printf("\n");
 
-            update_dv(fromid, from_dv);
-            if(bellman_ford() > 0){
-                return propagate();
-            }
-            return 0;
+            return update_dv(fromid, from_dv);
+            // if(bellman_ford() > 0){
+            //     return propagate();
+            // }
+            // return 0;
         }
         case(AGENT_SHOW):{
             printf("received cmd SHOW\n");
@@ -48,6 +48,8 @@ int respond(int sockfd, int type, int fromid, void * msg, struct sockaddr * from
             uint32_t *argv = (uint32_t *)msg;
             int toid = (int)ntohl(argv[1]), weight = (int)ntohl(argv[2]);
             return update_to(toid, weight);
+            // bellman_ford();
+            // return propagate();
         }
     }
 }

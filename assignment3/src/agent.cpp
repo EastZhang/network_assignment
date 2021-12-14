@@ -50,6 +50,9 @@ int parse_cmd(char *cmd, int *argv){
                 int len = strlen(tmpstr);
                 tmpstr[len - 1] = '\0';
                 argv[i] = atoi(tmpstr);
+                if(argv[i] <= 0){
+                    argv[i] = MAX_DIST;
+                }
             }
             else{
                 argv[i] = RID2ID(atoi(tmpstr));
@@ -179,8 +182,8 @@ int main(int argc, char **argv){
         printf("error: agent init failed\n");
         exit(-1);
     }
-            for(int i = 0; i < 4; ++i){
-            printf("id: %d, rid: %d\n", i, ID2RID(i));
-        }
+        //     for(int i = 0; i < 4; ++i){
+        //     printf("id: %d, rid: %d\n", i, ID2RID(i));
+        // }
     return agent();
 }

@@ -36,6 +36,8 @@ typedef struct RP_router{
     char * port;
     int dv[MAX_ROUTERN][MAX_ROUTERN]; // distance vectors
     int next_hop[MAX_ROUTERN]; // next hsop vector 
+    int dist[MAX_ROUTERN]; // distance to neighbors
+    int pacnum;
     std::vector<int> neighbor; // neighbors' id. never change.
 } router_t;
 
