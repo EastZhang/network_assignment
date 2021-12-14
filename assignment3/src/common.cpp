@@ -325,6 +325,10 @@ int propagate(){
         dv[i] = htonl((uint32_t)host->dv[id][i]);
     }
     for(int i = 0; i < router_num; ++i){
+        if(host->dv[id][i] >= MAX_DIST - 1){
+            host->dv[id][i] = MAX_DIST;
+            host->dist[i] = MAX_DIST;
+        }
         if(i == id || host->dist[i] >= MAX_DIST || host->dist[i] <= 0){
             continue;
         }
